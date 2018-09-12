@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 const cli = require('yargs');
-const { analize } = require('./src/commands');
+const { analyze } = require('./src/commands');
 
 cli
     .command({
         command : 'analize',
         aliases : ['a'],
         desc    : 'Get eslint report.',
-        handler : analize,
+        handler : analyze,
         builder : cli => {
             cli.option('config', {
                 alias    : 'c',

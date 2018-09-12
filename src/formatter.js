@@ -14,7 +14,7 @@ const chalk = require('chalk');
 
 const headerColors = [
     {
-        color : chalk.blue,
+        color : chalk.cyan,
         name  : 'autofixables',
         width : 12
     },

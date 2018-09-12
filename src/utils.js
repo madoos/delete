@@ -16,6 +16,9 @@ const CWD = process.cwd();
 const { readdirSync, lstatSync } = require('fs');
 const inquirer = require('inquirer');
 const Ora = require('ora');
+const { EOL } = require('os');
+//const Linter = require('eslint').CLIEngine
+const { join } = require('path');
 
 // String -> String
 const concatBaseDir = concat(`${CWD}/`);
@@ -87,10 +90,22 @@ const print = s => process.stdout.write(s);
 
 const notifier = spinner();
 
-const addNotifier = (f, { start, end }) => async (...args) => {
-    notifier.start(start);
-    await f(...args);
-    notifier.succeed(end);
+const addNotifier = (f, { start, end }) => (...args) => {
+    notifier.start(start.concat(EOL));
+    const result = f(...args);
+    notifier.succeed(end.concat(EOL));
+    return result;
+};
+
+const analyzeFiles = ({ config, ignore, path }) => {
+    const Linter = require(join(CWD, 'node_modules/eslint')).CLIEngine;
+
+    const cli = new Linter({
+        configFile : config,
+        ignorePath : ignore
+    });
+    const report = cli.executeOnFiles([path]);
+    return report;
 };
 
 module.exports = {
@@ -103,5 +118,7 @@ module.exports = {
     applyZip,
     percent,
     print,
-    addNotifier
+    addNotifier,
+    notifier,
+    analyzeFiles
 };

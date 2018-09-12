@@ -1,21 +1,35 @@
-const Linter = require('eslint').CLIEngine;
 const {
     getDirectories,
     getSelectedPath,
     CWD,
-    addNotifier
+    addNotifier,
+    analyzeFiles
 } = require('./utils');
 const { showReport } = require('./formatter');
+const { pipe } = require('ramda');
+const { join } = require('path');
 
-// show report in conosle
-const analize = async ({ config, ignore }) => {
+// _printReport :: ({ path, config, ignore }) -> undefined
+const _printReport = pipe(
+    analyzeFiles,
+    showReport
+);
+const _showAnalysis = addNotifier(_printReport, {
+    start : 'Generating report.',
+    end   : 'Done!'
+});
+
+const analyze = async ({ config, ignore }) => {
     const folders = getDirectories(CWD);
     const path = await getSelectedPath(folders);
-    const cli = new Linter({ configFile : config, ignorePath : ignore });
-    const report = cli.executeOnFiles([path]);
-    showReport(report);
+
+    _showAnalysis({
+        config : join(CWD, config),
+        ignore : join(CWD, ignore),
+        path
+    });
 };
 
 module.exports = {
-    analize : addNotifier(analize, { start : 'start', end : 'end' })
+    analyze
 };
