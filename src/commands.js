@@ -1,35 +1,62 @@
 const {
-    getDirectories,
-    getSelectedPath,
-    CWD,
     addNotifier,
-    analyzeFiles
+    getLintReport,
+    fixLintErrors,
+    askForDirectoryInPath
 } = require('./utils');
 const { showReport } = require('./formatter');
 const { pipe } = require('ramda');
-const { join } = require('path');
 
 // _printReport :: ({ path, config, ignore }) -> undefined
 const _printReport = pipe(
-    analyzeFiles,
+    getLintReport,
     showReport
 );
-const _showAnalysis = addNotifier(_printReport, {
+
+const _fixAndPrintReport = pipe(
+    fixLintErrors,
+    showReport
+);
+
+const _execAnalyze = addNotifier(_printReport, {
     start : 'Generating report.',
     end   : 'Done!'
 });
 
-const analyze = async ({ config, ignore }) => {
-    const folders = getDirectories(CWD);
-    const path = await getSelectedPath(folders);
+const _execFix = addNotifier(_fixAndPrintReport, {
+    start : 'Performing fix.',
+    end   : 'Done: Reported unfixable problems.'
+});
 
-    _showAnalysis({
-        config : join(CWD, config),
-        ignore : join(CWD, ignore),
-        path
-    });
+const _execPrettify = addNotifier(x => console.log(x), {
+    start : 'Performing prettify.',
+    end   : 'Done.'
+});
+
+const analyze = async ({ configFile, ignorePath }) => {
+    const { directory } = await askForDirectoryInPath(
+        'Select a directory to analyze.'
+    );
+    _execAnalyze({ configFile, ignorePath }, directory);
+};
+
+const fix = async ({ configFile, ignorePath }) => {
+    const { directory } = await askForDirectoryInPath(
+        'Select a directory to fix code style.'
+    );
+    _execFix({ configFile, ignorePath, fix : true }, directory);
+};
+
+const prettify = async () => {
+    const { directory } = await askForDirectoryInPath(
+        'Select a directory to prettify code.'
+    );
+    // ¿cli command: prettier-semi --write `"directory/**/*.js"?`
+    _execPrettify(directory);
 };
 
 module.exports = {
-    analyze
+    analyze,
+    fix,
+    prettify
 };

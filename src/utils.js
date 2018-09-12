@@ -3,8 +3,6 @@ const {
     map,
     filter,
     pipe,
-    pipeP,
-    prop,
     last,
     complement,
     split,
@@ -16,9 +14,7 @@ const CWD = process.cwd();
 const { readdirSync, lstatSync } = require('fs');
 const inquirer = require('inquirer');
 const Ora = require('ora');
-const { EOL } = require('os');
-//const Linter = require('eslint').CLIEngine
-const { join } = require('path');
+const Linter = require('eslint').CLIEngine;
 
 // String -> String
 const concatBaseDir = concat(`${CWD}/`);
@@ -44,24 +40,17 @@ const getDirectories = pipe(
     map(lastFolder)
 );
 
-// [Strings] => [Object]
-const ask = folders => {
-    return inquirer.prompt([
+// askForDirectoryInPath :: String => {directory}
+const askForDirectoryInPath = message =>
+    inquirer.prompt([
         {
             type    : 'list',
-            name    : 'path',
-            message : 'Select your line to fix code style',
-            choices : [...folders, 'exit'],
+            name    : 'directory',
+            message,
+            choices : [...getDirectories(CWD), 'exit'],
             filter  : input => CWD.concat('/').concat(input)
         }
     ]);
-};
-
-//  [Strings] => String
-const getSelectedPath = pipeP(
-    ask,
-    prop('path')
-);
 
 // spinner :: String -> Object
 const spinner = text => {
@@ -91,34 +80,33 @@ const print = s => process.stdout.write(s);
 const notifier = spinner();
 
 const addNotifier = (f, { start, end }) => (...args) => {
-    notifier.start(start.concat(EOL));
+    notifier.start(start);
     const result = f(...args);
-    notifier.succeed(end.concat(EOL));
+    notifier.succeed(end);
     return result;
 };
 
-const analyzeFiles = ({ config, ignore, path }) => {
-    const Linter = require(join(CWD, 'node_modules/eslint')).CLIEngine;
-
-    const cli = new Linter({
-        configFile : config,
-        ignorePath : ignore
-    });
-    const report = cli.executeOnFiles([path]);
-    return report;
+const getLintReport = (lintConfig, directory) => {
+    const cli = new Linter(lintConfig);
+    return cli.executeOnFiles([directory]);
 };
+
+const fixLintErrors = pipe(
+    getLintReport,
+    report => Linter.outputFixes(report) || report
+);
 
 module.exports = {
     CWD,
     spinner,
     mapObject,
-    getDirectories,
-    getSelectedPath,
     pickToArray,
     applyZip,
     percent,
     print,
     addNotifier,
     notifier,
-    analyzeFiles
+    getLintReport,
+    fixLintErrors,
+    askForDirectoryInPath
 };
