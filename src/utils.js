@@ -7,14 +7,15 @@ const {
     prop,
     last,
     complement,
-    split
+    split,
+    curry,
+    zipWith,
+    call
 } = require('ramda');
 const CWD = process.cwd();
 const { readdirSync, lstatSync } = require('fs');
 const inquirer = require('inquirer');
 const Ora = require('ora');
-const CLIEngine = require('eslint').CLIEngine;
-const { rulesFormatter } = require('./formatter');
 
 // String -> String
 const concatBaseDir = concat(`${CWD}/`);
@@ -67,22 +68,40 @@ const spinner = text => {
     });
 };
 
-// Object -> { stdin: Stream, stdout: Stream }
-const fix = async ({ config, ignore }) => {
-    const folders = getDirectories(CWD);
-    const path = await getSelectedPath(folders);
+// mapObject :: (a -> b) -> (Oa -> Ob
+const mapObject = curry((f, o) => {
+    return Object.entries(o).map(([key, value]) => f(value, key));
+});
 
-    const cli = new CLIEngine({
-        configFile : config,
-        ignorePath : ignore
-    });
+const pickToArray = curry((props, o) => {
+    return props.map(key => o[key]);
+});
 
-    var report = cli.executeOnFiles([path]);
-    console.log(rulesFormatter(report.results));
+const applyZip = curry((fns, data) => {
+    return zipWith(call, fns, data);
+});
+
+const percent = (a, b) => Math.floor((a / b) * 100);
+
+const print = s => process.stdout.write(s);
+
+const notifier = spinner();
+
+const addNotifier = (f, { start, end }) => async (...args) => {
+    notifier.start(start);
+    await f(...args);
+    notifier.succeed(end);
 };
 
 module.exports = {
     CWD,
-    fix,
-    spinner
+    spinner,
+    mapObject,
+    getDirectories,
+    getSelectedPath,
+    pickToArray,
+    applyZip,
+    percent,
+    print,
+    addNotifier
 };

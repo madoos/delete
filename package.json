@@ -51,7 +51,9 @@
     "testEnvironment": "node"
   },
   "dependencies": {
+    "array-to-table": "^1.0.1",
     "chalk": "^2.4.1",
+    "cli-table": "^0.3.1",
     "eslint-config-semistandard": "^12.0.1",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-import": "^2.14.0",
@@ -66,6 +68,7 @@
     "prettier-eslint": "^8.8.2",
     "ramda": "^0.25.0",
     "stringbuilder": "0.0.11",
+    "table": "^5.0.2",
     "yargs": "^12.0.2"
   }
 }

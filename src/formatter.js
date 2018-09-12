@@ -1,69 +1,125 @@
+const {
+    chain,
+    prop,
+    pipe,
+    groupBy,
+    map,
+    sortWith,
+    descend,
+    identity
+} = require('ramda');
+const { mapObject, pickToArray, applyZip, percent, print } = require('./utils');
+const { table: tableToString } = require('table');
 const chalk = require('chalk');
 
-function getProblemCount(results) {
-    return results.reduce((accumulator, fileResults) => {
-        fileResults.messages.forEach(message => {
-            const rule = accumulator.find(
-                r =>
-                    r.ruleId === message.ruleId &&
-                    r.severity === message.severity
-            );
-            if (rule) {
-                rule.amount++;
-                rule.autoFixable += message.fix ? 1 : 0;
-            } else {
-                accumulator.push({
-                    ruleId      : message.ruleId,
-                    severity    : message.severity,
-                    message     : message.message,
-                    amount      : 1,
-                    autoFixable : message.fix ? 1 : 0
-                });
-            }
-        });
-        return accumulator;
-    }, []);
-}
-
-const rulesFormatter = results => {
-    console.log(results[0]);
-    let problemCount = getProblemCount(results);
-    if (problemCount.length) {
-        console.log(
-            'problems',
-            'auto-fixable',
-            'rule'.padEnd(35),
-            'description'
-        );
-        problemCount
-            // Ordering by amount, errors first
-            .sort(
-                (rule1, rule2) =>
-                    rule1.amount === rule2.amount
-                        ? rule2.severity - rule1.severity
-                        : rule2.amount - rule1.amount
-            )
-            // Printing
-            .forEach(rule => {
-                const colorKey = rule.severity === 2 ? 'red' : 'yellow';
-                const percentageFixable = Math.round(
-                    (rule.autoFixable / rule.amount) * 100
-                );
-                console.log(
-                    chalk.keyword(colorKey)(rule.amount.toString().padStart(8)),
-                    chalk.cyan(
-                        rule.autoFixable
-                            ? rule.autoFixable.toString().padStart(7) +
-                              (percentageFixable + '%').padStart(5)
-                            : ''.padEnd(7 + 5)
-                    ),
-                    chalk.keyword(colorKey)((rule.ruleId || '-').padEnd(35)),
-                    chalk.dim(rule.message)
-                );
-            });
+const headerColors = [
+    {
+        color : chalk.blue,
+        name  : 'autofixables',
+        width : 12
+    },
+    {
+        color : chalk.magenta,
+        name  : 'rule',
+        width : 30
+    },
+    {
+        color : chalk.cyan,
+        name  : 'problems',
+        width : 8
+    },
+    {
+        color : value => {
+            const colors = { 1 : chalk.red, 2 : chalk.yellow };
+            const colorize = colors[value] || identity;
+            return colorize(value);
+        },
+        name  : 'severity',
+        width : 8
+    },
+    {
+        color : chalk.green,
+        name  : 'percentage',
+        width : 10
+    },
+    {
+        color : chalk.gray,
+        name  : 'message',
+        width : 65
     }
+];
+
+const doRowConfig = (conf, { width }, i) => {
+    conf[i] = { width };
+    return conf;
 };
 
+const tableOptions = {
+    columns : headerColors.reduce(doRowConfig, {})
+};
+
+const doResume = (report, item, i, arr) => {
+    const autofixables = (report.autofixables += item.fix ? 1 : 0);
+    return {
+        autofixables,
+        problems : arr.length,
+        message  : item.message
+    };
+};
+
+const setPersentage = item => ({
+    ...item,
+    percentage : percent(item.autofixables, item.problems)
+});
+
+const addRuleAndSeverity = (value, key) => {
+    const [rule, severity] = key.split('$');
+    return { ...value, rule, severity };
+};
+
+// resume :: [{ message: []}] -> [{ 'rule', 'severity', 'problems', 'autofixables', 'message' }]
+const resume = pipe(
+    chain(prop('messages')),
+    groupBy(item => item.ruleId + '$' + item.severity),
+    map(items => items.reduce(doResume, { autofixables : 0 })),
+    map(setPersentage),
+    mapObject(addRuleAndSeverity),
+    sortWith([descend(prop('autofixables'))])
+);
+
+const toTable = data => {
+    const head = map(prop('name'), headerColors);
+    const colums = map(pickToArray(head), data);
+    return [head, ...colums];
+};
+
+const colorizeColum = colum => {
+    const colors = map(prop('color'), headerColors);
+    return applyZip(colors, colum);
+};
+
+const colorizeTable = ([header, ...colums]) => {
+    const headersColored = map(chalk.gray, header);
+    return [headersColored, ...colums.map(colorizeColum)];
+};
+
+const createTable = pipe(
+    toTable,
+    colorizeTable,
+    table => tableToString(table, tableOptions)
+);
+
+const showReport = pipe(
+    prop('results'),
+    resume,
+    createTable,
+    print
+);
+
 module.exports = {
-    rulesFormatter
+    resume,
+    colorizeTable,
+    toTable,
+    createTable,
+    showReport
 };

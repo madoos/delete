@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-const cli = require('yargs')
-const { fix } = require('./src/commands')
+const cli = require('yargs');
+const { analize } = require('./src/commands');
 
 cli
     .command({
-        command : 'fix',
-        aliases : ['f'],
-        desc    : 'fix js files',
-        handler : fix,
+        command : 'analize',
+        aliases : ['a'],
+        desc    : 'Get eslint report.',
+        handler : analize,
         builder : cli => {
             cli.option('config', {
                 alias    : 'c',
@@ -18,9 +18,9 @@ cli
                 alias    : 'i',
                 describe : 'eslint ignore',
                 required : true
-            })
+            });
 
-            return cli
+            return cli;
         }
     })
-    .help().argv
+    .help().argv;
