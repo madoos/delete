@@ -2,7 +2,9 @@ const {
     addNotifier,
     getLintReport,
     fixLintErrors,
-    askForDirectoryInPath
+    askForDirectoryInPath,
+    prettierCli,
+    promisifyEE
 } = require('./utils');
 const { showReport } = require('./formatter');
 const { pipe } = require('ramda');
@@ -18,6 +20,13 @@ const _fixAndPrintReport = pipe(
     showReport
 );
 
+const _prettify = ({}) => {
+    const prettier = prettierCli({});
+    prettier.stdout.pipe(process.stdout);
+    prettier.stderr.pipe(process.stderr);
+    return promisifyEE({ resolve : 'close', reject : 'error' }, prettier);
+};
+
 const _execAnalyze = addNotifier(_printReport, {
     start : 'Generating report.',
     end   : 'Done!'
@@ -28,7 +37,7 @@ const _execFix = addNotifier(_fixAndPrintReport, {
     end   : 'Done: Reported unfixable problems.'
 });
 
-const _execPrettify = addNotifier(x => console.log(x), {
+const _execPrettify = addNotifier(_prettify, {
     start : 'Performing prettify.',
     end   : 'Done.'
 });

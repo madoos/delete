@@ -18,7 +18,7 @@ const builder = cli => {
 
 cli
     .command({
-        command : 'analize',
+        command : 'analyze',
         aliases : ['a'],
         desc    : 'Get eslint report.',
         handler : analyze,

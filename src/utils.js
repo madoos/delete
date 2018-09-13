@@ -15,6 +15,8 @@ const { readdirSync, lstatSync } = require('fs');
 const inquirer = require('inquirer');
 const Ora = require('ora');
 const Linter = require('eslint').CLIEngine;
+const { spawn } = require('child_process');
+const { join } = require('path');
 
 // String -> String
 const concatBaseDir = concat(`${CWD}/`);
@@ -79,9 +81,9 @@ const print = s => process.stdout.write(s);
 
 const notifier = spinner();
 
-const addNotifier = (f, { start, end }) => (...args) => {
+const addNotifier = (f, { start, end }) => async (...args) => {
     notifier.start(start);
-    const result = f(...args);
+    const result = await f(...args);
     notifier.succeed(end);
     return result;
 };
@@ -96,6 +98,19 @@ const fixLintErrors = pipe(
     report => Linter.outputFixes(report) || report
 );
 
+const prettierCli = ({}) => {
+    const prettier = join(
+        __dirname,
+        '../node_modules/prettier-eslint-cli/dist/index.js'
+    );
+    return spawn(prettier, ['--help'], { cwd : CWD });
+};
+
+const promisifyEE = ({ resolve, reject }, ee) =>
+    new Promise((res, rej) => {
+        ee.on(resolve, () => res(ee)).on(reject, rej);
+    });
+
 module.exports = {
     CWD,
     spinner,
@@ -108,5 +123,7 @@ module.exports = {
     notifier,
     getLintReport,
     fixLintErrors,
-    askForDirectoryInPath
+    askForDirectoryInPath,
+    prettierCli,
+    promisifyEE
 };
