@@ -7,12 +7,17 @@ const builder = cli => {
     cli.option('configFile', {
         alias    : 'c',
         describe : 'eslint config file',
-        required : true
+        default  : './.eslintrc.json'
     }).option('ignorePath', {
         alias    : 'i',
         describe : 'eslint ignore file',
-        required : true
+        default  : './.eslintignore'
     });
+    /*     .option('gitStagedFiles', {
+        alias    : 'g',
+        describe : 'perform task only on git staged files.',
+        boolean  : true
+    }); */
     return cli;
 };
 
