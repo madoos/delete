@@ -1,7 +1,20 @@
 #!/usr/bin/env node
 
 const cli = require('yargs');
-const { analyze } = require('./src/commands');
+const { analyze, fix, prettify } = require('./src/commands');
+
+const builder = cli => {
+    cli.option('configFile', {
+        alias    : 'c',
+        describe : 'eslint config file',
+        required : true
+    }).option('ignorePath', {
+        alias    : 'i',
+        describe : 'eslint ignore file',
+        required : true
+    });
+    return cli;
+};
 
 cli
     .command({
@@ -9,18 +22,19 @@ cli
         aliases : ['a'],
         desc    : 'Get eslint report.',
         handler : analyze,
-        builder : cli => {
-            cli.option('config', {
-                alias    : 'c',
-                describe : 'eslint config',
-                required : true
-            }).option('ignore', {
-                alias    : 'i',
-                describe : 'eslint ignore',
-                required : true
-            });
-
-            return cli;
-        }
+        builder
+    })
+    .command({
+        command : 'fix',
+        aliases : ['f'],
+        desc    : 'Fix eslint problems.',
+        handler : fix,
+        builder
+    })
+    .command({
+        command : 'prettify',
+        aliases : ['p'],
+        desc    : 'Prettify with prettier-eslint.',
+        handler : prettify
     })
     .help().argv;

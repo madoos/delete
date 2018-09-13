@@ -11,6 +11,7 @@ const {
 const { mapObject, pickToArray, applyZip, percent, print } = require('./utils');
 const { table: tableToString } = require('table');
 const chalk = require('chalk');
+const { EOL } = require('os');
 
 const headerColors = [
     {
@@ -84,7 +85,7 @@ const resume = pipe(
     map(items => items.reduce(doResume, { autofixables : 0 })),
     map(setPercentage),
     mapObject(addRuleAndSeverity),
-    sortWith([descend(prop('autofixables'))])
+    sortWith([descend(prop('autofixables')), descend(prop('problems'))])
 );
 
 const toTable = data => {
@@ -106,7 +107,7 @@ const colorizeTable = ([header, ...columns]) => {
 const createTable = pipe(
     toTable,
     colorizeTable,
-    table => tableToString(table, tableOptions)
+    table => EOL.concat(tableToString(table, tableOptions))
 );
 
 const showReport = pipe(
