@@ -4,10 +4,12 @@ const {
     fixLintErrors,
     askForDirectoryInPath,
     prettierCli,
-    promisifyEE
+    promisifyEE,
+    asPromise
 } = require('./utils');
 const { showReport } = require('./formatter');
-const { pipe } = require('ramda');
+const { pipe, pipeP, prop } = require('ramda');
+const _ = require('highland');
 
 // _printReport :: ({ path, config, ignore }) -> undefined
 const _printReport = pipe(
@@ -20,10 +22,15 @@ const _fixAndPrintReport = pipe(
     showReport
 );
 
-const _prettify = ({}) => {
-    const prettier = prettierCli({});
-    prettier.stdout.pipe(process.stdout);
-    prettier.stderr.pipe(process.stderr);
+const _prettify = directory => {
+    const prettier = prettierCli(directory);
+    _(prettier.stdout)
+        .last()
+        .pipe(process.stdout);
+    _(prettier.stderr)
+        .last()
+        .pipe(process.stderr);
+
     return promisifyEE({ resolve : 'close', reject : 'error' }, prettier);
 };
 
@@ -38,7 +45,7 @@ const _execFix = addNotifier(_fixAndPrintReport, {
 });
 
 const _execPrettify = addNotifier(_prettify, {
-    start : 'Performing prettify.',
+    start : 'Performing prettify. ',
     end   : 'Done.'
 });
 
@@ -56,13 +63,11 @@ const fix = async ({ configFile, ignorePath }) => {
     _execFix({ configFile, ignorePath, fix : true }, directory);
 };
 
-const prettify = async () => {
-    const { directory } = await askForDirectoryInPath(
-        'Select a directory to prettify code.'
-    );
-    // ¿cli command: prettier-semi --write `"directory/**/*.js"?`
-    _execPrettify(directory);
-};
+const prettify = pipeP(
+    () => askForDirectoryInPath('Select a directory to prettify code.'),
+    asPromise(prop('directory')),
+    _execPrettify
+);
 
 module.exports = {
     analyze,

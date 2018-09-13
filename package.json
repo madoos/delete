@@ -60,10 +60,13 @@
     "eslint-plugin-node": "^7.0.1",
     "eslint-plugin-promise": "^4.0.1",
     "eslint-plugin-standard": "^4.0.0",
+    "highland": "^2.13.0",
     "inquirer": "^6.2.0",
     "npm": "^6.4.1",
     "ora": "^3.0.0",
     "prettier-eslint": "^8.8.2",
+    "prettier-semi": "^1.0.1",
+    "prettier-semi-cli": "^1.0.0",
     "ramda": "^0.25.0",
     "table": "^5.0.2",
     "yargs": "^12.0.2"

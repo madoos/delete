@@ -98,18 +98,21 @@ const fixLintErrors = pipe(
     report => Linter.outputFixes(report) || report
 );
 
-const prettierCli = ({}) => {
+const prettierCli = directory => {
     const prettier = join(
         __dirname,
-        '../node_modules/prettier-eslint-cli/dist/index.js'
+        '../node_modules/prettier-semi-cli/src/index.js'
     );
-    return spawn(prettier, ['--help'], { cwd : CWD });
+    const files = directory.concat('/**/*.js');
+    return spawn(prettier, ['--write', files], { cwd : CWD });
 };
 
 const promisifyEE = ({ resolve, reject }, ee) =>
     new Promise((res, rej) => {
         ee.on(resolve, () => res(ee)).on(reject, rej);
     });
+
+const asPromise = f => (...args) => Promise.resolve(f(...args));
 
 module.exports = {
     CWD,
@@ -125,5 +128,6 @@ module.exports = {
     fixLintErrors,
     askForDirectoryInPath,
     prettierCli,
-    promisifyEE
+    promisifyEE,
+    asPromise
 };
