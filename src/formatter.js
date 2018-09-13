@@ -67,7 +67,7 @@ const doResume = (report, item, i, arr) => {
     };
 };
 
-const setPersentage = item => ({
+const setPercentage = item => ({
     ...item,
     percentage : percent(item.autofixables, item.problems)
 });
@@ -82,25 +82,25 @@ const resume = pipe(
     chain(prop('messages')),
     groupBy(item => item.ruleId + '$' + item.severity),
     map(items => items.reduce(doResume, { autofixables : 0 })),
-    map(setPersentage),
+    map(setPercentage),
     mapObject(addRuleAndSeverity),
     sortWith([descend(prop('autofixables'))])
 );
 
 const toTable = data => {
     const head = map(prop('name'), headerColors);
-    const colums = map(pickToArray(head), data);
-    return [head, ...colums];
+    const columns = map(pickToArray(head), data);
+    return [head, ...columns];
 };
 
-const colorizeColum = colum => {
+const colorizeColumn = column => {
     const colors = map(prop('color'), headerColors);
-    return applyZip(colors, colum);
+    return applyZip(colors, column);
 };
 
-const colorizeTable = ([header, ...colums]) => {
+const colorizeTable = ([header, ...columns]) => {
     const headersColored = map(chalk.gray, header);
-    return [headersColored, ...colums.map(colorizeColum)];
+    return [headersColored, ...columns.map(colorizeColumn)];
 };
 
 const createTable = pipe(
