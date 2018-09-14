@@ -55,7 +55,7 @@ const _getFiles = async (directory, askMessage, branch) => {
     } else if (branch) {
         return getGitDiffFiles(branch);
     }
-    return await [askForDirectoryInPath(askMessage)];
+    return [await askForDirectoryInPath(askMessage)];
 };
 
 const analyze = async ({
