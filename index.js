@@ -2,24 +2,42 @@
 
 const cli = require('yargs');
 const { analyze, fix, prettify } = require('./src/commands');
+const { pipe } = require('ramda');
 
-const builder = cli => {
-    cli.option('configFile', {
-        alias    : 'c',
-        describe : 'eslint config file',
-        default  : './.eslintrc.json'
-    }).option('ignorePath', {
-        alias    : 'i',
-        describe : 'eslint ignore file',
-        default  : './.eslintignore'
-    });
-    /*     .option('gitStagedFiles', {
-        alias    : 'g',
-        describe : 'perform task only on git staged files.',
-        boolean  : true
-    }); */
-    return cli;
+const baseBuilder = builder => {
+    builder
+        .option('configFile', {
+            alias    : 'c',
+            describe : 'eslint config file',
+            default  : './.eslintrc.json'
+        })
+        .option('ignorePath', {
+            alias    : 'i',
+            describe : 'eslint ignore file',
+            default  : './.eslintignore'
+        })
+        .option('gitDiffBranch', {
+            alias    : 'g',
+            describe :
+                'perform task only on git files that are different of given branch.',
+            conflicts : 'files'
+        });
+    return builder;
 };
+
+const stagedFilesBuilder = builder => {
+    builder.option('directory', {
+        alias     : 'd',
+        describe  : 'perform task in a directory.',
+        conflicts : 'gitDiffBranch'
+    });
+    return builder;
+};
+
+const builder = pipe(
+    baseBuilder,
+    stagedFilesBuilder
+);
 
 cli
     .command({
@@ -40,6 +58,7 @@ cli
         command : 'prettify',
         aliases : ['p'],
         desc    : 'Prettify with prettier-eslint.',
-        handler : prettify
+        handler : prettify,
+        builder : stagedFilesBuilder
     })
     .help().argv;

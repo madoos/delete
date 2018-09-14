@@ -5,10 +5,10 @@ const {
     askForDirectoryInPath,
     prettierCli,
     promisifyEE,
-    asPromise
+    getGitDiffFiles
 } = require('./utils');
 const { showReport } = require('./formatter');
-const { pipe, pipeP, prop } = require('ramda');
+const { pipe } = require('ramda');
 const _ = require('highland');
 
 // _printReport :: ({ path, config, ignore }) -> undefined
@@ -49,25 +49,46 @@ const _execPrettify = addNotifier(_prettify, {
     end   : 'Done.'
 });
 
-const analyze = async ({ configFile, ignorePath }) => {
-    const { directory } = await askForDirectoryInPath(
-        'Select a directory to analyze.'
-    );
-    _execAnalyze({ configFile, ignorePath }, directory);
+const _getFiles = async (directory, askMessage, branch) => {
+    if (directory) {
+        return [directory];
+    } else if (branch) {
+        return getGitDiffFiles(branch);
+    }
+    return await [askForDirectoryInPath(askMessage)];
 };
 
-const fix = async ({ configFile, ignorePath }) => {
-    const { directory } = await askForDirectoryInPath(
-        'Select a directory to fix code style.'
+const analyze = async ({
+    configFile,
+    ignorePath,
+    directory,
+    gitDiffBranch
+}) => {
+    let files = await _getFiles(
+        directory,
+        'Select a directory to analyze.',
+        gitDiffBranch
     );
-    _execFix({ configFile, ignorePath, fix : true }, directory);
+
+    _execAnalyze({ configFile, ignorePath }, files);
 };
 
-const prettify = pipeP(
-    () => askForDirectoryInPath('Select a directory to prettify code.'),
-    asPromise(prop('directory')),
-    _execPrettify
-);
+const fix = async ({ configFile, ignorePath, directory, gitDiffBranch }) => {
+    let files = await _getFiles(
+        directory,
+        'Select a directory to fix code style.',
+        gitDiffBranch
+    );
+    _execFix({ configFile, ignorePath, fix : true }, files);
+};
+
+const prettify = async ({ directory }) => {
+    [directory] = await _getFiles(
+        directory,
+        'Select a directory to prettify code.'
+    );
+    _execPrettify(directory);
+};
 
 module.exports = {
     analyze,

@@ -10,12 +10,13 @@ const {
     zipWith,
     call
 } = require('ramda');
+const { EOL } = require('os');
 const CWD = process.cwd();
 const { readdirSync, lstatSync } = require('fs');
 const inquirer = require('inquirer');
 const Ora = require('ora');
 const Linter = require('eslint').CLIEngine;
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const { join } = require('path');
 
 // String -> String
@@ -42,9 +43,9 @@ const getDirectories = pipe(
     map(lastFolder)
 );
 
-// askForDirectoryInPath :: String => {directory}
-const askForDirectoryInPath = message =>
-    inquirer.prompt([
+// askForDirectoryInPath :: String => directory
+const askForDirectoryInPath = async message => {
+    let response = await inquirer.prompt([
         {
             type    : 'list',
             name    : 'directory',
@@ -53,6 +54,8 @@ const askForDirectoryInPath = message =>
             filter  : input => CWD.concat('/').concat(input)
         }
     ]);
+    return response.directory;
+};
 
 // spinner :: String -> Object
 const spinner = text => {
@@ -88,9 +91,9 @@ const addNotifier = (f, { start, end }) => async (...args) => {
     return result;
 };
 
-const getLintReport = (lintConfig, directory) => {
+const getLintReport = (lintConfig, files) => {
     const cli = new Linter(lintConfig);
-    return cli.executeOnFiles([directory]);
+    return cli.executeOnFiles(files);
 };
 
 const fixLintErrors = pipe(
@@ -99,13 +102,28 @@ const fixLintErrors = pipe(
 );
 
 const prettierCli = directory => {
-    const prettier = join(
-        __dirname,
-        '../node_modules/prettier-semi-cli/src/index.js'
-    );
+    const prettier = join(CWD, 'node_modules/prettier-semi-cli/src/index.js');
     const files = directory.concat('/**/*.js');
     return spawn(prettier, ['--write', files], { cwd : CWD });
 };
+
+const isValidFile = filename => {
+    return filename.split('.').pop() === 'js';
+};
+
+const gitDiffExec = branchTarget => {
+    return execSync(`git diff --name-only ${branchTarget}`, {
+        encoding : 'utf8'
+    });
+};
+
+const streamToArray = stream => stream.split(EOL);
+
+const getGitDiffFiles = pipe(
+    gitDiffExec,
+    streamToArray,
+    filter(isValidFile)
+);
 
 const promisifyEE = ({ resolve, reject }, ee) =>
     new Promise((res, rej) => {
@@ -129,5 +147,6 @@ module.exports = {
     askForDirectoryInPath,
     prettierCli,
     promisifyEE,
+    getGitDiffFiles,
     asPromise
 };

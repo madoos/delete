@@ -68,6 +68,7 @@
     "prettier-semi": "^1.0.1",
     "prettier-semi-cli": "^1.0.0",
     "ramda": "^0.25.0",
+    "simple-git": "^1.96.0",
     "table": "^5.0.2",
     "yargs": "^12.0.2"
   }
