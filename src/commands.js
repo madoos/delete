@@ -17,11 +17,6 @@ const _printReport = pipe(
     showReport
 );
 
-const _fixAndPrintReport = pipe(
-    fixLintErrors,
-    showReport
-);
-
 const _prettify = directory => {
     const prettier = prettierCli(directory);
     _(prettier.stdout)
@@ -39,7 +34,7 @@ const _execAnalyze = addNotifier(_printReport, {
     end   : 'Done!'
 });
 
-const _execFix = addNotifier(_fixAndPrintReport, {
+const _execFix = addNotifier(fixLintErrors, {
     start : 'Performing fix.',
     end   : 'Done: Reported unfixable problems.'
 });
